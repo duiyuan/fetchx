@@ -1,0 +1,53 @@
+{
+  "name": "@dioxide/fetchx",
+  "version": "1.0.0",
+  "description": "A powerful and flexible TypeScript HTTP request library with retry, timeout, and interceptor support for both browser and Node.js",
+  "main": "lib/index.cjs.js",
+  "module": "lib/index.esm.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    "import": "./lib/index.esm.js",
+    "require": "./lib/index.cjs.js",
+    "types": "./lib/index.d.ts"
+  },
+  "files": [
+    "lib"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "fetch",
+    "axios",
+    "http",
+    "request",
+    "retry",
+    "timeout",
+    "interceptor",
+    "typescript",
+    "browser",
+    "nodejs"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "peerDependencies": {
+    "axios": "^1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "axios": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "axios": "^1.7.0",
+    "typescript": "^5.6.3",
+    "rollup": "^4.20.0",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "tslib": "^2.6.0"
+  }
+}
