@@ -1,6 +1,8 @@
-import typescript from "@rollup/plugin-typescript";
+// rollup.config.js
 
-export default {
+const typescript = require("@rollup/plugin-typescript");
+
+module.exports = {
   input: "src/index.ts",
   output: [
     { file: "lib/index.cjs.js", format: "cjs" },
