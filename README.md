@@ -1,6 +1,6 @@
 # fetchx
 
-，支持浏览器和 Node.js 环境的TypeScript HTTP 请求库。
+支持浏览器和 Node.js 环境的TypeScript HTTP 请求库。
 
 ## 特性
 
@@ -30,35 +30,35 @@ npm install axios
 ### 基础使用
 
 ```typescript
-import { request } from '@your-scope/retry-request';
+import { request } from "@your-scope/retry-request";
 
 // 简单的 GET 请求
-const data = await request('https://api.example.com/users');
+const data = await request("https://api.example.com/users");
 
 // POST 请求
-const result = await request('https://api.example.com/users', {
-  method: 'POST',
+const result = await request("https://api.example.com/users", {
+  method: "POST",
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
-  body: JSON.stringify({ name: 'John' }),
+  body: JSON.stringify({ name: "John" }),
 });
 ```
 
 ### 全局配置
 
 ```typescript
-import { setGlobalConfig } from '@your-scope/retry-request';
+import { setGlobalConfig } from "@your-scope/retry-request";
 
 setGlobalConfig({
-  baseURL: 'https://api.example.com',
+  baseURL: "https://api.example.com",
   headers: {
-    'Authorization': 'Bearer token',
+    Authorization: "Bearer token",
   },
   retry: {
     maxRetries: 3,
     baseDelayMs: 300,
-    backoff: 'exponential-jitter',
+    backoff: "exponential-jitter",
   },
 });
 ```
@@ -67,18 +67,18 @@ setGlobalConfig({
 
 ```typescript
 // 使用 fetch (默认在浏览器中)
-const data = await request('/api/users', {
-  adapter: 'fetch',
+const data = await request("/api/users", {
+  adapter: "fetch",
 });
 
 // 使用 axios
-const data = await request('/api/users', {
-  adapter: 'axios',
+const data = await request("/api/users", {
+  adapter: "axios",
 });
 
 // 自动选择 (浏览器用 fetch, Node.js 用 axios)
-const data = await request('/api/users', {
-  adapter: 'auto', // 默认值
+const data = await request("/api/users", {
+  adapter: "auto", // 默认值
 });
 ```
 
@@ -87,14 +87,14 @@ const data = await request('/api/users', {
 ### 重试配置
 
 ```typescript
-const data = await request('/api/users', {
+const data = await request("/api/users", {
   retry: {
-    maxRetries: 5,              // 最大重试次数
-    baseDelayMs: 200,           // 基础延迟时间（毫秒）
-    maxDelayMs: 10000,          // 最大延迟时间（毫秒）
-    backoff: 'exponential-jitter', // 退避策略
+    maxRetries: 5, // 最大重试次数
+    baseDelayMs: 200, // 基础延迟时间（毫秒）
+    maxDelayMs: 10000, // 最大延迟时间（毫秒）
+    backoff: "exponential-jitter", // 退避策略
     retryOn: [429, 502, 503, 504], // 需要重试的状态码
-    respectRetryAfter: true,    // 是否遵守 Retry-After 响应头
+    respectRetryAfter: true, // 是否遵守 Retry-After 响应头
     shouldRetry: (error, response, attempt) => {
       // 自定义重试逻辑
       return attempt < 3 && error.status >= 500;
@@ -106,12 +106,12 @@ const data = await request('/api/users', {
 });
 ```
 
-### 退避策略
+### 回退策略
 
-支持三种退避策略：
+支持三种回退策略：
 
 - **`fixed`**: 固定延迟时间
-- **`exponential`**: 指数增长延迟（2^attempt * baseDelayMs）
+- **`exponential`**: 指数增长延迟（2^attempt \* baseDelayMs）
 - **`exponential-jitter`**: 指数增长 + 随机抖动（推荐）
 
 ```typescript
@@ -137,15 +137,15 @@ retry: {
 ### 超时控制
 
 ```typescript
-const data = await request('/api/users', {
+const data = await request("/api/users", {
   timeoutMs: 5000, // 5 秒超时
 });
 ```
 
-### 请求拦截器
+### 请求拦截
 
 ```typescript
-import { setGlobalConfig } from '@your-scope/retry-request';
+import { setGlobalConfig } from "@your-scope/retry-request";
 
 setGlobalConfig({
   requestInterceptors: [
@@ -156,29 +156,29 @@ setGlobalConfig({
         ...config,
         headers: {
           ...config.headers,
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       };
     },
     async (config) => {
       // 添加请求日志
-      console.log('发送请求:', config);
+      console.log("发送请求:", config);
       return config;
     },
   ],
 });
 ```
 
-### 响应拦截器
+### 响应拦截
 
 ```typescript
-import { setGlobalConfig } from '@your-scope/retry-request';
+import { setGlobalConfig } from "@your-scope/retry-request";
 
 setGlobalConfig({
   responseInterceptors: [
     async (data) => {
       // 处理响应数据
-      console.log('收到响应:', data);
+      console.log("收到响应:", data);
       return data;
     },
     async (data) => {
@@ -197,14 +197,14 @@ setGlobalConfig({
 ```typescript
 // 全局配置
 setGlobalConfig({
-  baseURL: 'https://api.example.com',
+  baseURL: "https://api.example.com",
   retry: { maxRetries: 3 },
 });
 
 // 局部配置会与全局配置合并
-const data = await request('/users', {
+const data = await request("/users", {
   retry: { maxRetries: 5 }, // 覆盖全局的 maxRetries
-  headers: { 'X-Custom': 'value' }, // 添加额外的 header
+  headers: { "X-Custom": "value" }, // 添加额外的 header
 });
 ```
 
@@ -234,7 +234,9 @@ interface RequestConfig extends RequestInit {
   headers?: Record<string, string>;
   adapter?: "fetch" | "axios" | "auto";
   timeoutMs?: number;
-  requestInterceptors?: ((config: RequestConfig) => RequestConfig | Promise<RequestConfig>)[];
+  requestInterceptors?: ((
+    config: RequestConfig
+  ) => RequestConfig | Promise<RequestConfig>)[];
   responseInterceptors?: ((res: any) => any | Promise<any>)[];
 }
 
@@ -251,65 +253,25 @@ interface RetryOptions {
 }
 ```
 
-## 使用场景
+## Axios 特有配置
 
-### 处理 API 限流
+FetchX 完整支持所有 Axios 配置参数！当使用 `adapter: 'axios'` 时，你可以访问：
 
-```typescript
-const data = await request('/api/rate-limited', {
-  retry: {
-    maxRetries: 5,
-    retryOn: [429], // 只重试 429 Too Many Requests
-    respectRetryAfter: true, // 遵守服务器的 Retry-After 响应头
-    backoff: 'exponential-jitter',
-  },
-});
-```
+- `data` - 请求体（自动序列化）
+- `params` - 查询参数（自动转换为 URL）
+- `withCredentials` - 发送凭证
+- `responseType` - 响应类型
+- `maxRedirects` - 最大重定向数
+- `validateStatus` - 自定义状态验证
+- `transformRequest` / `transformResponse` - 数据转换
+- `signal` - 请求取消
+- 以及其他所有 Axios 配置选项
 
-### 处理不稳定的网络
 
-```typescript
-const data = await request('/api/unstable', {
-  timeoutMs: 10000, // 10 秒超时
-  retry: {
-    maxRetries: 3,
-    retryOn: [502, 503, 504], // 重试服务器错误
-    onRetry: (attempt, error) => {
-      console.warn(`网络不稳定，第 ${attempt} 次重试...`);
-    },
-  },
-});
-```
+## 示例
 
-### 微服务架构
+查看 [examples.ts](./examples.ts)
 
-```typescript
-// 服务 A
-setGlobalConfig({
-  baseURL: 'https://service-a.example.com',
-  headers: { 'X-Service': 'A' },
-  retry: { maxRetries: 3 },
-});
+---
 
-// 服务 B 使用不同配置
-const dataB = await request('https://service-b.example.com/api', {
-  baseURL: '', // 清空全局 baseURL
-  retry: { maxRetries: 5 },
-});
-```
-
-## 构建
-
-```bash
-npm run build
-```
-
-构建产物：
-
-- `lib/index.cjs.js` - CommonJS 格式
-- `lib/index.esm.js` - ES Module 格式
-- `lib/index.d.ts` - TypeScript 类型定义
-
-## License
-
-MIT
+© 2025 FetchX. MIT License

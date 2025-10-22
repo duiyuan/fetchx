@@ -12,14 +12,47 @@ export async function fetchAdapter<T = any>(
     headers,
     requestInterceptors = [],
     responseInterceptors = [],
+    // Extract fetch-specific options
+    body,
+    cache,
+    credentials,
+    integrity,
+    keepalive,
+    mode,
+    redirect,
+    referrer,
+    referrerPolicy,
+    window,
+    method,
     ...rest
   } = config;
   const fullUrl = baseURL ? new URL(url, baseURL).toString() : url;
 
-  let finalConfig: RequestConfig = { ...rest, headers };
+  // Build fetch config with only fetch-compatible options
+  let finalConfig: RequestInit = {
+    method,
+    headers,
+    body,
+    cache,
+    credentials,
+    integrity,
+    keepalive,
+    mode,
+    redirect,
+    referrer,
+    referrerPolicy,
+    window,
+  };
+  
+  // Remove undefined values
+  Object.keys(finalConfig).forEach(key => {
+    if (finalConfig[key as keyof RequestInit] === undefined) {
+      delete finalConfig[key as keyof RequestInit];
+    }
+  });
 
   for (const interceptor of requestInterceptors) {
-    finalConfig = await interceptor(finalConfig);
+    finalConfig = await interceptor(finalConfig as any) as RequestInit;
   }
 
   return withRetry(async () => {
