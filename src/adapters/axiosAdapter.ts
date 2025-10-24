@@ -1,5 +1,6 @@
 import { withRetry } from "../core/retry";
 import type { RequestConfig } from "../core/type";
+import { isNode } from "../env";
 
 export async function axiosAdapter<T = any>(
   url: string,
@@ -37,6 +38,14 @@ export async function axiosAdapter<T = any>(
   } = config;
   const fullUrl = baseURL ? new URL(url, baseURL).toString() : url;
 
+  // Disable proxy in browser environment (security restriction)
+  if (!isNode && proxy !== undefined) {
+    console.warn(
+      '[FetchX] Proxy configuration is not supported in browser environments due to security restrictions. ' +
+      'Please configure proxy via system settings, browser extensions, or browser launch parameters.'
+    );
+  }
+
   // Build axios config with only axios-compatible options
   let axiosConfig: any = {
     url: fullUrl,
@@ -57,7 +66,8 @@ export async function axiosAdapter<T = any>(
     socketPath,
     httpAgent,
     httpsAgent,
-    proxy,
+    // Only include proxy in Node.js environment
+    proxy: isNode ? proxy : undefined,
     cancelToken,
     signal,
     transitional,

@@ -114,6 +114,45 @@ export interface FetchSpecificConfig {
   referrer?: string;
   referrerPolicy?: ReferrerPolicy;
   window?: null;
+  
+  /**
+   * HTTP/HTTPS proxy configuration for fetch adapter (Node.js only)
+   * 
+   * ⚠️ Browser Limitation: Due to browser security restrictions, JavaScript cannot 
+   * directly configure proxies in browser environments. This configuration only 
+   * works in Node.js.
+   * 
+   * For browsers, configure proxy via:
+   * - System network settings (macOS/Windows/Linux)
+   * - Browser proxy extensions (SwitchyOmega, FoxyProxy)
+   * - Browser launch parameters: chrome --proxy-server="http://127.0.0.1:7890"
+   * 
+   * @example
+   * // Simple URL string
+   * {
+   *   proxyUrl: 'http://127.0.0.1:7890'
+   * }
+   * 
+   * @example
+   * // Detailed configuration
+   * {
+   *   proxyUrl: {
+   *     protocol: 'http',
+   *     host: '127.0.0.1',
+   *     port: 7890,
+   *     auth: { username: 'user', password: 'pass' }
+   *   }
+   * }
+   */
+  proxyUrl?: string | {
+    protocol?: string;
+    host: string;
+    port: number;
+    auth?: {
+      username: string;
+      password: string;
+    };
+  };
 }
 
 // Combined RequestConfig that supports both fetch and axios options

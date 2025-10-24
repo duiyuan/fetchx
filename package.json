@@ -1,5 +1,5 @@
 {
-  "name": "@dioxide/fetchx",
+  "name": "@dioxide-js/fetchx",
   "version": "1.0.0",
   "description": "A powerful and flexible TypeScript HTTP request library with retry, timeout, and interceptor support for both browser and Node.js",
   "main": "lib/index.cjs.js",
@@ -25,6 +25,8 @@
     "retry",
     "timeout",
     "interceptor",
+    "proxy",
+    "http-proxy",
     "typescript",
     "browser",
     "nodejs"
@@ -36,15 +38,20 @@
     "url": ""
   },
   "peerDependencies": {
-    "axios": "^1.7.0"
+    "axios": "^1.7.0",
+    "https-proxy-agent": "^7.0.0"
   },
   "peerDependenciesMeta": {
     "axios": {
+      "optional": true
+    },
+    "https-proxy-agent": {
       "optional": true
     }
   },
   "devDependencies": {
     "axios": "^1.7.0",
+    "https-proxy-agent": "^7.0.0",
     "typescript": "^5.6.3",
     "rollup": "^4.20.0",
     "@rollup/plugin-typescript": "^11.1.6",

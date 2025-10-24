@@ -1,5 +1,6 @@
 import { withRetry } from "../core/retry";
 import type { RequestConfig } from "../core/type";
+import { isNode } from "../env";
 
 export async function fetchAdapter<T = any>(
   url: string,
@@ -24,6 +25,7 @@ export async function fetchAdapter<T = any>(
     referrerPolicy,
     window,
     method,
+    proxyUrl,
     ...rest
   } = config;
   const fullUrl = baseURL ? new URL(url, baseURL).toString() : url;
@@ -62,9 +64,25 @@ export async function fetchAdapter<T = any>(
       : null;
 
     try {
+      // Setup proxy agent for Node.js environment
+      let dispatcher: any;
+      if (isNode && proxyUrl) {
+        try {
+          const { HttpsProxyAgent } = await import("https-proxy-agent");
+          const proxyUrlString = typeof proxyUrl === 'string' 
+            ? proxyUrl 
+            : `${proxyUrl.protocol || 'http'}://${proxyUrl.auth ? `${proxyUrl.auth.username}:${proxyUrl.auth.password}@` : ''}${proxyUrl.host}:${proxyUrl.port}`;
+          
+          dispatcher = new HttpsProxyAgent(proxyUrlString);
+        } catch (err) {
+          console.warn('https-proxy-agent not available, proxy will be ignored. Install it with: npm install https-proxy-agent');
+        }
+      }
+
       const res = await fetch(fullUrl, {
         ...finalConfig,
         signal: controller.signal,
+        ...(dispatcher ? { dispatcher } : {}),
       });
 
       if (!res.ok) {

@@ -459,6 +459,95 @@ async function example14_performanceTest() {
 }
 
 // ============================================
+// example 15: HTTP Proxy Configuration (Node.js only)
+// ============================================
+// ⚠️ IMPORTANT: Proxy configuration only works in Node.js environment!
+// 
+// Browser Limitation:
+// - JavaScript cannot configure proxies in browsers (security restriction)
+// - In browsers, use: system settings, browser extensions, or launch parameters
+// - All browser requests automatically use configured system/browser proxy
+//
+async function example15_proxyConfig() {
+  // ========== Fetch Adapter Proxy ==========
+  // Requires: npm install https-proxy-agent
+  // Only works in Node.js environment
+  
+  // Method 1: Simple proxy URL string
+  const fetchWithProxy1 = await request("/api/users", "fetch", {
+    proxyUrl: "http://127.0.0.1:7890",
+  });
+  
+  // Method 2: Detailed proxy configuration
+  const fetchWithProxy2 = await request("/api/users", "fetch", {
+    proxyUrl: {
+      protocol: "http",
+      host: "127.0.0.1",
+      port: 7890,
+    },
+  });
+  
+  // Method 3: Proxy with authentication
+  const fetchWithAuthProxy = await request("/api/users", "fetch", {
+    proxyUrl: {
+      protocol: "http",
+      host: "proxy.example.com",
+      port: 8080,
+      auth: {
+        username: "proxyuser",
+        password: "proxypass",
+      },
+    },
+  });
+  
+  // ========== Axios Adapter Proxy ==========
+  // Native support, no extra dependency needed
+  
+  // Method 1: Basic proxy configuration
+  const axiosWithProxy = await request("/api/users", "axios", {
+    proxy: {
+      protocol: "http",
+      host: "127.0.0.1",
+      port: 7890,
+    },
+  });
+  
+  // Method 2: Proxy with authentication
+  const axiosWithAuthProxy = await request("/api/users", "axios", {
+    proxy: {
+      protocol: "http",
+      host: "proxy.example.com",
+      port: 8080,
+      auth: {
+        username: "proxyuser",
+        password: "proxypass",
+      },
+    },
+  });
+  
+  // Method 3: Disable proxy explicitly
+  const axiosNoProxy = await request("/api/users", "axios", {
+    proxy: false,
+  });
+  
+  // ========== Global Proxy Configuration ==========
+  setGlobalConfig({
+    baseURL: "https://api.example.com",
+    // Note: proxyUrl works for fetch adapter in global config
+    // For axios, you need to set proxy in each request
+  });
+  
+  return {
+    fetchWithProxy1,
+    fetchWithProxy2,
+    fetchWithAuthProxy,
+    axiosWithProxy,
+    axiosWithAuthProxy,
+    axiosNoProxy,
+  };
+}
+
+// ============================================
 // export all examples
 // ============================================
 export {
@@ -476,6 +565,7 @@ export {
   example12_errorHandling,
   example13_typescript,
   example14_performanceTest,
+  example15_proxyConfig,
 };
 
 // ============================================
