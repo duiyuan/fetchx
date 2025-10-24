@@ -548,6 +548,195 @@ async function example15_proxyConfig() {
 }
 
 // ============================================
+// example 16: Request Cancellation - NEW Built-in Abort API
+// ============================================
+// ✨ NEW: All requests now have built-in abort() method!
+// No need to manually manage AbortController in most cases
+async function example16_requestCancellation() {
+  // ========== Method 1: Built-in abort() - RECOMMENDED ==========
+  
+  // Fetch adapter - just call .abort()
+  const req1 = request("/api/users", "fetch");
+  
+  // Cancel after 2 seconds
+  setTimeout(() => {
+    req1.abort();  // ✅ Super simple!
+    console.log("Request cancelled");
+  }, 2000);
+  
+  try {
+    const data = await req1;
+    console.log(data);
+  } catch (error: any) {
+    if (error.name === "AbortError") {
+      console.log("Request was aborted");
+    }
+  }
+  
+  // Axios adapter - same simple API
+  const req2 = request("/api/posts", "axios", {
+    method: "POST",
+    data: { title: "New Post" }
+  });
+  
+  // Cancel immediately
+  req2.abort();
+  
+  try {
+    const data = await req2;
+  } catch (error: any) {
+    if (error.name === "AbortError") {
+      console.log("Axios request cancelled");
+    }
+  }
+  
+  // ========== Method 2: Manual AbortController (if needed) ==========
+  
+  // Still supported if you need manual control
+  const controller = new AbortController();
+  
+  const req3 = request("/api/users", "fetch", {
+    signal: controller.signal,
+  });
+  
+  // Can use either controller.abort() or req3.abort()
+  controller.abort();  // or req3.abort()
+  
+  // ========== Practical Pattern: Auto-cancel previous request (NEW API) ==========
+  
+  class DataFetcher {
+    private currentRequest: any = null;
+    
+    async fetch(url: string) {
+      // Cancel previous request if exists
+      if (this.currentRequest) {
+        this.currentRequest.abort();  // ✅ Simple!
+      }
+      
+      // Start new request
+      this.currentRequest = request(url, "fetch");
+      
+      try {
+        const data = await this.currentRequest;
+        this.currentRequest = null;
+        return data;
+      } catch (error: any) {
+        if (error.name === "AbortError") {
+          console.log("Previous request cancelled");
+          return null;
+        }
+        throw error;
+      }
+    }
+    
+    cancelAll() {
+      if (this.currentRequest) {
+        this.currentRequest.abort();
+        this.currentRequest = null;
+      }
+    }
+  }
+  
+  // Usage
+  const fetcher = new DataFetcher();
+  fetcher.fetch("/api/users");  // Start request
+  fetcher.fetch("/api/posts");  // Auto-cancel first, start second
+  
+  // ========== Search with auto-cancel (NEW API) ==========
+  
+  let currentSearch: any = null;
+  
+  async function search(keyword: string) {
+    // Cancel previous search
+    if (currentSearch) {
+      currentSearch.abort();  // ✅ No controller management!
+    }
+    
+    // Start new search
+    currentSearch = request(`/api/search?q=${keyword}`, "fetch");
+    
+    try {
+      const results = await currentSearch;
+      console.log("Search results:", results);
+      currentSearch = null;
+      return results;
+    } catch (error: any) {
+      if (error.name !== "AbortError") {
+        console.error("Search failed:", error);
+      }
+      return null;
+    }
+  }
+  
+  // Simulate fast typing - only last search completes
+  await search("rea");    // cancelled
+  await search("reac");   // cancelled
+  await search("react");  // completes
+  
+  // ========== Combine with timeout (NEW API) ==========
+  
+  async function requestWithTimeout(url: string, timeoutMs: number) {
+    const req = request(url, "axios");
+    
+    // Auto-abort after timeout
+    const timeoutId = setTimeout(() => {
+      req.abort();  // ✅ Clean!
+    }, timeoutMs);
+    
+    try {
+      const data = await req;
+      clearTimeout(timeoutId);
+      return data;
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error.name === "AbortError") {
+        throw new Error(`Request timeout (${timeoutMs}ms)`);
+      }
+      throw error;
+    }
+  }
+  
+  // ========== Button click cancellation ==========
+  
+  let uploadReq: any = null;
+  
+  function startUpload(file: File) {
+    if (uploadReq) {
+      uploadReq.abort();
+    }
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    uploadReq = request("/api/upload", "axios", {
+      method: "POST",
+      data: formData,
+    });
+    
+    return uploadReq;
+  }
+  
+  // Simulated button click
+  function cancelUpload() {
+    if (uploadReq) {
+      uploadReq.abort();
+      console.log("Upload cancelled by user");
+    }
+  }
+  
+  return {
+    req1,
+    req2,
+    req3,
+    fetcher,
+    search,
+    requestWithTimeout,
+    startUpload,
+    cancelUpload,
+  };
+}
+
+// ============================================
 // export all examples
 // ============================================
 export {
@@ -566,6 +755,7 @@ export {
   example13_typescript,
   example14_performanceTest,
   example15_proxyConfig,
+  example16_requestCancellation,
 };
 
 // ============================================

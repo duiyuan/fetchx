@@ -175,3 +175,18 @@ export type RequestFunction = <T = any>(
   url: string,
   config?: RequestConfig
 ) => Promise<T>;
+
+/**
+ * Abortable request that can be cancelled
+ */
+export interface AbortableRequest<T = any> extends Promise<T> {
+  /**
+   * Abort the request
+   */
+  abort: () => void;
+  
+  /**
+   * The AbortController used by this request
+   */
+  controller: AbortController;
+}

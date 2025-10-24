@@ -46,6 +46,14 @@ export async function axiosAdapter<T = any>(
     );
   }
 
+  // Warn about deprecated cancelToken
+  if (cancelToken !== undefined) {
+    console.warn(
+      '[FetchX] Axios CancelToken is deprecated. Please use AbortController instead.\n' +
+      'Example: const controller = new AbortController(); request(url, "axios", { signal: controller.signal })'
+    );
+  }
+
   // Build axios config with only axios-compatible options
   let axiosConfig: any = {
     url: fullUrl,
@@ -68,8 +76,11 @@ export async function axiosAdapter<T = any>(
     httpsAgent,
     // Only include proxy in Node.js environment
     proxy: isNode ? proxy : undefined,
-    cancelToken,
+    // AbortController support (modern standard, recommended)
+    // Axios >= 0.22.0 supports AbortSignal
     signal,
+    // Keep cancelToken for backward compatibility (deprecated, will be removed)
+    cancelToken,
     transitional,
   };
   
@@ -99,6 +110,15 @@ export async function axiosAdapter<T = any>(
       }
       return data as T;
     } catch (err: any) {
+      // Handle AbortController cancellation
+      if (err.code === 'ERR_CANCELED' || err.name === 'CanceledError') {
+        // Normalize to standard AbortError for consistency with fetch
+        const abortError: any = new Error('The operation was aborted');
+        abortError.name = 'AbortError';
+        abortError.code = 'ABORT_ERR';
+        throw abortError;
+      }
+      
       // Normalize axios error structure
       if (err.response) {
         const error: any = new Error(`HTTP ${err.response.status}`);
