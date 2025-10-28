@@ -6,11 +6,12 @@
 
 - 🌐 **跨平台支持**: 同时支持浏览器和 Node.js 环境
 - 🔄 **灵活的适配器**: 支持 `fetch` 和 `axios` 两种请求方式
-- 🔁 **智能重试**: 内置多种退避策略（固定、指数、指数抖动）
+- 🔁 **智能重试**: 仅对网络错误和特定HTTP状态码重试，避免无效重试
 - ⏱️ **超时控制**: 支持请求超时配置
 - 🎯 **拦截器**: 内置请求和响应拦截器
 - 🌍 **全局配置**: 支持全局配置和局部配置合并
 - 🔌 **代理支持**: 支持 HTTP/HTTPS 代理配置（Node.js）
+- ❌ **内置取消**: 所有请求自带 `abort()` 方法，无需手动管理
 - 📦 **Tree-shakable**: 支持按需引入，减小打包体积
 - 🔒 **类型安全**: 完整的 TypeScript 类型支持
 
@@ -63,11 +64,14 @@ setGlobalConfig({
     Authorization: "Bearer token",
   },
   retry: {
-    maxRetries: 3,
+    maxRetries: 3,  // 启用重试（默认0）
     baseDelayMs: 300,
     backoff: "exponential-jitter",
   },
 });
+
+// 注意：默认不重试，需要显式配置 maxRetries
+// 启用后，只对网络错误（ECONNREFUSED等）和特定HTTP状态码（429, 502, 503, 504）重试
 ```
 
 ### 选择适配器
@@ -93,24 +97,97 @@ const data = await request("/api/users", {
 
 ### 重试配置
 
+**默认策略：** FetchX 默认**不自动重试**，只有明确配置 `maxRetries > 0` 时才启用重试。
+
+**智能重试：** 启用重试后，只对以下情况自动重试：
+- ✅ **网络错误**：`ECONNREFUSED`, `ECONNRESET`, `ETIMEDOUT`（连接失败、超时）
+- ✅ **HTTP状态码**：`429`（限流）, `502`, `503`, `504`（服务器错误）
+- ❌ **不重试**：4xx 客户端错误（400, 401, 403, 404等）、用户手动取消
+
 ```typescript
-const data = await request("/api/users", {
+// 基本重试配置
+const data = await request("/api/users", "fetch", {
   retry: {
-    maxRetries: 5, // 最大重试次数
+    maxRetries: 3, // 最大重试次数（默认0，不重试）
     baseDelayMs: 200, // 基础延迟时间（毫秒）
     maxDelayMs: 10000, // 最大延迟时间（毫秒）
     backoff: "exponential-jitter", // 退避策略
-    retryOn: [429, 502, 503, 504], // 需要重试的状态码
-    respectRetryAfter: true, // 是否遵守 Retry-After 响应头
+  },
+});
+
+// 自动重试的场景
+// ✅ 网络连接失败（ECONNREFUSED）-> 自动重试
+// ✅ 连接超时（ETIMEDOUT）-> 自动重试
+// ✅ 服务器返回502/503 -> 自动重试
+// ❌ 404 Not Found -> 立即失败，不重试
+// ❌ 401 Unauthorized -> 立即失败，不重试
+
+// 自定义重试逻辑
+const data = await request("/api/users", "fetch", {
+  retry: {
+    maxRetries: 5,
     shouldRetry: (error, response, attempt) => {
-      // 自定义重试逻辑
-      return attempt < 3 && error.status >= 500;
+      // 自定义：只重试500以上的服务器错误
+      const status = response?.status || error?.status;
+      return status >= 500 && attempt < 3;
     },
     onRetry: (attempt, error) => {
       console.log(`重试第 ${attempt} 次:`, error.message);
     },
   },
 });
+
+// 遵守服务器的 Retry-After 响应头
+const data = await request("/api/users", "fetch", {
+  retry: {
+    maxRetries: 3,
+    respectRetryAfter: true, // 默认 true
+    // 如果服务器返回 Retry-After: 5，会等待5秒后重试
+  },
+});
+```
+
+### 可重试的错误类型
+
+FetchX 智能识别可重试的错误，避免无效重试：
+
+**✅ 自动重试的错误：**
+
+| 错误类型 | 错误码 | 说明 | 原因 |
+|---------|--------|------|------|
+| 连接被拒绝 | `ECONNREFUSED` | 服务器未启动或端口不可达 | 临时性，重试可能成功 |
+| 连接重置 | `ECONNRESET` | 连接被对方强制关闭 | 网络波动，重试可能成功 |
+| 连接超时 | `ETIMEDOUT` | 连接建立超时 | 网络延迟，重试可能成功 |
+| Socket超时 | `ESOCKETTIMEDOUT` | Socket读写超时 | 临时性超时，重试可能成功 |
+| 网络不可达 | `ENETUNREACH` | 无法到达目标网络 | 路由问题，重试可能成功 |
+| DNS查询超时 | `EAI_AGAIN` | DNS服务暂时不可用 | DNS临时故障，重试可能成功 |
+| HTTP 429 | `429 Too Many Requests` | 请求频率限制 | 等待后重试 |
+| HTTP 502 | `502 Bad Gateway` | 网关错误 | 上游服务临时故障 |
+| HTTP 503 | `503 Service Unavailable` | 服务不可用 | 服务重启中 |
+| HTTP 504 | `504 Gateway Timeout` | 网关超时 | 上游响应慢 |
+
+**❌ 不会重试的错误：**
+- 4xx 客户端错误（400, 401, 403, 404等）- 请求本身有问题
+- 用户手动取消（AbortError）- 用户意图取消
+- 其他网络错误（EHOSTUNREACH等）- 重试无意义
+
+```typescript
+// 示例：网络错误自动重试
+const data = await request("/api/users", "fetch", {
+  retry: {
+    maxRetries: 3,
+    baseDelayMs: 1000,
+  },
+});
+
+// 场景1: ECONNREFUSED（服务器未启动）
+// ✅ 自动重试3次：1秒后 -> 2秒后 -> 4秒后
+
+// 场景2: 404 Not Found
+// ❌ 立即失败，不重试（客户端错误，重试无意义）
+
+// 场景3: 503 Service Unavailable
+// ✅ 自动重试3次（服务器临时故障，可能恢复）
 ```
 
 ### 回退策略
@@ -119,7 +196,7 @@ const data = await request("/api/users", {
 
 - **`fixed`**: 固定延迟时间
 - **`exponential`**: 指数增长延迟（2^attempt \* baseDelayMs）
-- **`exponential-jitter`**: 指数增长 + 随机抖动（推荐）
+- **`exponential-jitter`**: 指数增长 + 随机抖动（推荐，避免惊群效应）
 
 ```typescript
 // 固定延迟：每次都等待 1 秒
