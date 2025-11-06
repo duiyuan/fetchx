@@ -13,6 +13,7 @@ export async function fetchAdapter<T = any>(
     headers,
     requestInterceptors = [],
     responseInterceptors = [],
+    signal: externalSignal, // Extract the signal from config
     // Extract fetch-specific options
     body,
     cache,
@@ -59,6 +60,20 @@ export async function fetchAdapter<T = any>(
 
   return withRetry(async () => {
     const controller = new AbortController();
+    
+    // Listen to external signal if provided
+    if (externalSignal) {
+      // If external signal is already aborted, abort immediately
+      if (externalSignal.aborted) {
+        controller.abort();
+      } else {
+        // Listen to external signal's abort event
+        externalSignal.addEventListener('abort', () => {
+          controller.abort();
+        }, { once: true });
+      }
+    }
+    
     const timeout = timeoutMs
       ? setTimeout(() => controller.abort(), timeoutMs)
       : null;

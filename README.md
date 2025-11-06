@@ -885,6 +885,179 @@ try {
 - 📦 Axios 需要 >= 0.22.0 版本才支持 AbortController
 
 
+## 开发与测试
+
+### 运行测试
+
+FetchX 使用 Jest 作为测试框架，提供了完整的测试套件来验证所有功能。
+
+#### 安装依赖
+
+```bash
+npm install
+```
+
+#### 运行所有测试
+
+```bash
+npm test
+```
+
+#### 运行特定测试
+
+```bash
+# 运行基础功能测试
+npm test -- --testNamePattern="基础请求功能"
+
+# 运行拦截器测试
+npm test -- --testNamePattern="拦截器"
+
+# 运行请求取消测试
+npm test -- --testNamePattern="cancel request"
+
+# 运行重试机制测试
+npm test -- --testNamePattern="重试"
+
+# 运行超时功能测试
+npm test -- --testNamePattern="超时"
+```
+
+#### 查看测试覆盖率
+
+```bash
+npm run test:coverage
+```
+
+这将生成详细的测试覆盖率报告，包括：
+- 语句覆盖率
+- 分支覆盖率
+- 函数覆盖率
+- 行覆盖率
+
+#### 监视模式（开发时使用）
+
+```bash
+npm run test:watch
+```
+
+监视模式会在文件修改时自动重新运行相关测试，适合开发时使用。
+
+#### 详细输出模式
+
+```bash
+npm run test:verbose
+```
+
+### 测试覆盖的功能
+
+测试套件覆盖了以下所有核心功能：
+
+#### 1. 基础功能测试 (`__tests__/basic.test.ts`)
+- ✅ GET、POST、PUT、DELETE 请求
+- ✅ Fetch 和 Axios 适配器
+- ✅ 全局配置和局部配置
+- ✅ TypeScript 类型推断
+- ✅ 查询参数处理
+
+#### 2. 拦截器测试 (`__tests__/interceptors.test.ts`)
+- ✅ 请求拦截器
+- ✅ 响应拦截器
+- ✅ 拦截器链式调用
+- ✅ 全局和局部拦截器合并
+- ✅ 异步拦截器
+
+#### 3. 请求取消测试 (`__tests__/abort.test.ts`)
+- ✅ abort() 方法取消请求
+- ✅ AbortController 手动控制
+- ✅ 自动取消上一个请求
+- ✅ 搜索防抖场景
+- ✅ 超时前手动取消
+
+#### 4. 重试机制测试 (`__tests__/retry.test.ts`)
+- ✅ 网络错误时自动重试
+- ✅ 指数退避策略
+- ✅ 自定义重试逻辑
+- ✅ onRetry 回调
+- ✅ maxDelayMs 限制
+
+#### 5. 超时测试 (`__tests__/timeout.test.ts`)
+- ✅ Fetch 适配器超时
+- ✅ Axios 适配器超时
+- ✅ 超时与重试组合
+- ✅ 超时与取消组合
+
+### 手动验证
+
+除了自动化测试，你也可以通过手动测试脚本来验证功能：
+
+#### 创建测试脚本
+
+创建一个 `test.js` 文件：
+
+```javascript
+const { request, setGlobalConfig } = require('@dioxide-js/fetchx');
+
+async function testBasicRequest() {
+  console.log('测试基础 GET 请求...');
+  try {
+    const data = await request('https://jsonplaceholder.typicode.com/posts/1', 'fetch');
+    console.log('✅ 成功:', data.title);
+  } catch (error) {
+    console.error('❌ 失败:', error.message);
+  }
+}
+
+async function testAbort() {
+  console.log('\n测试请求取消...');
+  try {
+    const req = request('https://jsonplaceholder.typicode.com/posts', 'fetch');
+    
+    setTimeout(() => {
+      console.log('取消请求...');
+      req.abort();
+    }, 100);
+    
+    await req;
+    console.log('❌ 请求应该被取消但没有');
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      console.log('✅ 请求成功取消');
+    }
+  }
+}
+
+async function runTests() {
+  await testBasicRequest();
+  await testAbort();
+  console.log('\n测试完成！');
+}
+
+runTests();
+```
+
+#### 运行手动测试
+
+```bash
+# 先构建包
+npm run build
+
+# 运行测试脚本
+node test.js
+```
+
+### 构建项目
+
+在运行测试或发布前，需要构建项目：
+
+```bash
+npm run build
+```
+
+这将生成以下文件：
+- `lib/index.cjs.js` - CommonJS 格式
+- `lib/index.esm.js` - ES Module 格式
+- `lib/index.d.ts` - TypeScript 类型定义
+
 ## 示例
 
 查看 [examples.ts](./examples.ts)
