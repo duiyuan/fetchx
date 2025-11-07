@@ -110,6 +110,15 @@ export async function axiosAdapter<T = any>(
       }
       return data as T;
     } catch (err: any) {
+      // Handle timeout errors
+      if (err.code === 'ECONNABORTED' && err.message?.includes('timeout')) {
+        const timeoutError: any = new Error('Request timeout');
+        timeoutError.name = 'TimeoutError';
+        timeoutError.code = 'ETIMEDOUT';
+        timeoutError.originalError = err;
+        throw timeoutError;
+      }
+      
       // Handle AbortController cancellation
       if (err.code === 'ERR_CANCELED' || err.name === 'CanceledError') {
         // Normalize to standard AbortError for consistency with fetch

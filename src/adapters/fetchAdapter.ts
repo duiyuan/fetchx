@@ -60,6 +60,7 @@ export async function fetchAdapter<T = any>(
 
   return withRetry(async () => {
     const controller = new AbortController();
+    let isTimeoutAbort = false;
     
     // Listen to external signal if provided
     if (externalSignal) {
@@ -75,7 +76,10 @@ export async function fetchAdapter<T = any>(
     }
     
     const timeout = timeoutMs
-      ? setTimeout(() => controller.abort(), timeoutMs)
+      ? setTimeout(() => {
+          isTimeoutAbort = true;
+          controller.abort();
+        }, timeoutMs)
       : null;
 
     try {
@@ -121,6 +125,16 @@ export async function fetchAdapter<T = any>(
       }
 
       return data as T;
+    } catch (err: any) {
+      // If this is a timeout abort, mark the error accordingly
+      if (err.name === 'AbortError' && isTimeoutAbort) {
+        const timeoutError: any = new Error('Request timeout');
+        timeoutError.name = 'TimeoutError';
+        timeoutError.code = 'ETIMEDOUT';
+        timeoutError.originalError = err;
+        throw timeoutError;
+      }
+      throw err;
     } finally {
       if (timeout) clearTimeout(timeout);
     }

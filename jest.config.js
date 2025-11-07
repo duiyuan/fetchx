@@ -11,14 +11,14 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
-  globals: {
-    'ts-jest': {
+  transform: {
+    '^.+\\.ts$': ['ts-jest', {
       tsconfig: {
         esModuleInterop: true,
       },
-    },
+    }],
   },
-  // 设置超时时间
+  // set timeout to 10 seconds
   testTimeout: 10000,
 };
 

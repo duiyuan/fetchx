@@ -35,6 +35,15 @@ function isRetryableNetworkError(err: any): boolean {
     return true;
   }
   
+  // Check for fetch network errors (TypeError with "fetch" in message)
+  // This covers DNS failures, connection refused, etc.
+  if (err.name === 'TypeError' && 
+      (err.message?.includes('fetch') || 
+       err.message?.includes('network') ||
+       err.message?.includes('Failed to fetch'))) {
+    return true;
+  }
+  
   return false;
 }
 
